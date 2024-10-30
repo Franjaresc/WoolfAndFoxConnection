@@ -1,10 +1,9 @@
+'use server'
 import { sql } from "@vercel/postgres";
-import { NextResponse } from "next/server";
 
-
-export async function GET() {
-
-    const response = await sql`SELECT * FROM "Company" ORDER BY "Id" ASC `;
+export const fetchCompany = async () => {
+    try {
+        const response = await sql`SELECT * FROM "Company" ORDER BY "Id" ASC `;
         const title = response?.fields?.map(
             fields => ({
                 name: fields.name
@@ -20,5 +19,9 @@ export async function GET() {
             title: title,
             data: data
         }
-        return NextResponse.json({ company })
+        return company
+    }
+    catch (error){
+        throw new Error(error)
+    }
 }
