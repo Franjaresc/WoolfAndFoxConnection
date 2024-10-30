@@ -16,7 +16,7 @@ export const getCompany = createAsyncThunk(
 
 // Estado inicial
 const initialState = {
-    company: null, // Cambia a null para representar que no hay datos inicialmente
+    company: [], 
     loading: false,
     error: null,
 };

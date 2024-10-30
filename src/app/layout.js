@@ -25,10 +25,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <StoreProvider>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-neutral-50 dark:bg-neutral-800 text-gray-800 dark:text-gray-200`}
         >
           <Header />
-          <main className="flex-grow">{children}</main>
+          <main className="flex-grow px-4 sm:px-6 lg:px-8 bg-white dark:bg-neutral-900 shadow-md rounded-lg">
+            {children}
+          </main>
           <Footer />
         </body>
       </StoreProvider>
