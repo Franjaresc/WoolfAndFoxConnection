@@ -5,17 +5,12 @@ import { sql } from "@vercel/postgres";
 export const fetchCompany = async () => {
     try {
         const response = await sql`SELECT * FROM "Company" ORDER BY "Id" ASC`;
-
-        const title = response.fields.map(field => ({
-            name: field.name
-        }));
-
         const data = response.rows.map(company => ({
             Id: company.Id,
             Name: company.Name,
         }));
 
-        return { title, data };
+        return  data;
 
     } catch (error) {
         throw new Error(`Error fetching companies: ${error.message}`);
@@ -41,7 +36,7 @@ export const insertCompany = async ({ Id, Name }) => {
             INSERT INTO public."Company" ("Id", "Name")
             VALUES (${Id}, ${Name}) 
             ON CONFLICT ("Id") DO NOTHING
-            RETURNING "Id";`;
+            RETURNING *;`;
 
         if (response.rowCount === 0) {
             throw new Error(`Company with Id ${Id} already exists.`);

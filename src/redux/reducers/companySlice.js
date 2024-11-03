@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { fetchCompany } from "@/Services/Company";
 
 // Define una acción asíncrona para obtener la compañía
@@ -47,6 +47,20 @@ const companySlice = createSlice({
             });
     },
 });
+
+// Selector memoizado para obtener la compañía
+export const selectCompany = (state) => state.company.company;
+export const selectLoading = (state) => state.company.loading;
+export const selectError = (state) => state.company.error;
+
+export const selectCompanyData = createSelector(
+    [selectCompany, selectLoading, selectError],
+    (company, loading, error) => ({
+        company: company || [],
+        loading,
+        error: error || null,
+    })
+);
 
 // Exporta las acciones del slice
 export const { clearCompany } = companySlice.actions;

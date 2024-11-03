@@ -4,21 +4,10 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
 
-    const response = await sql`SELECT * FROM "Company" ORDER BY "Id" ASC `;
-        const title = response?.fields?.map(
-            fields => ({
-                name: fields.name
-            })
-        )
-        const data = response?.rows?.map(
-            company => ({
-                Id: company.Id,
-                Name: company.Name,
-            })
-        )
-        const company = {
-            title: title,
-            data: data
-        }
-        return NextResponse.json({ company })
+    const response = await sql`
+            INSERT INTO "Orders"(
+	"Date", "Id", "Type", "Company", "Price", "Observation")
+	VALUES ('12/11/1999', '123456789', 1, 1, 12, '') 
+            RETURNING "Id";`;
+        return NextResponse.json({ response })
 }
