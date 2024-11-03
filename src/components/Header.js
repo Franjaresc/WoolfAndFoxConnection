@@ -12,16 +12,16 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-background-light dark:bg-background-dark shadow-md">
-      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+    <header className="bg-background shadow-md ">
+      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
           <div className="md:flex md:items-center md:gap-12">
-            <Link className="block text-primary-600 dark:text-primary-600 flex " href="#">
+            <Link className="block" href="#">
               <Image
                 src={Logo}
-                width={70}
-                height={70}
+                width={100}
+                height={100}
                 alt='Woolf and Fox connection'
               />
             </Link>
@@ -49,7 +49,7 @@ export default function Header() {
           <div className="flex items-center gap-4">
             <div className="sm:flex sm:gap-4">
               <Link
-                className="rounded-md bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-primary-500 transition"
+                className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-foreground shadow hover:bg-primary/90 transition"
                 href="#"
               >
                 Login
