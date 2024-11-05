@@ -106,7 +106,7 @@ const orderSlice = createSlice({
                 state.error = null;
             })
             .addCase(updateOrderById.fulfilled, (state, action) => {
-                const index = state.orders.findIndex(order => order.id === action.payload.id);
+                const index = state.orders.findIndex(order => order.Id === action.payload.Id);
                 if (index !== -1) {
                     state.orders[index] = action.payload;
                 }
@@ -123,7 +123,8 @@ const orderSlice = createSlice({
                 state.error = null;
             })
             .addCase(removeOrder.fulfilled, (state, action) => {
-                state.orders = state.orders.filter(order => order.id !== action.payload.id);
+                console.log(state.orders)
+                state.orders = state.orders.filter(order => order.Id !== action.payload);
                 state.loading = false;
             })
             .addCase(removeOrder.rejected, (state, action) => {

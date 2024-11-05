@@ -5,21 +5,29 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
 import OrdersForm from "@/components/OrdersForm" // Asegúrate de tener la ruta correcta
+import { createOrder } from "@/redux/reducers/orderSlice";
+import { useAppDispatch } from "@/redux/hooks";
+import { useState } from "react";
 
 export function CreateOrderDialog() {
+
+    const [open, setOpen] = useState(false);
+
+    const dispatch = useAppDispatch();
+
     const handleFormSubmit = (data) => {
-        console.log("Form data submitted:", data);
-        // Aquí puedes manejar la lógica para guardar la orden o cerrar el diálogo
+        dispatch(createOrder(data))
+        setOpen(false)
     };
 
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline">Create New Order</Button>
             </DialogTrigger>

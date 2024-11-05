@@ -14,27 +14,40 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { CalendarIcon, CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"
+import { Calendar } from "./ui/calendar"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { selectCompanyData } from "@/redux/reducers/companySlice"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command"
+import { useAppSelector } from "@/redux/hooks"
+import { deleteOrder } from "@/Services/Orders"
+
 
 const FormSchema = z.object({
-    Date: z.string().min(2, {
-        message: "Date cannot be empty.",
+    Date: z.date({
+        required_error: "Date cannot be empty.",
+        invalid_type_error: "Date cannot be empty!",
     }),
     Id: z.string().min(2, {
         message: "ID must be at least 2 characters.",
     }),
-    Type: z.number({
+    Type: z.coerce.number({
         required_error: "Type is required.",
     }).nonnegative(),
-    Company: z.number({
+    Company: z.coerce.number({
         required_error: "Company is required.",
     }).nonnegative(),
     Observation: z.string().optional(),
-    Price: z.number({
+    Price: z.coerce.number({
         required_error: "Price is required.",
     }).nonnegative(),
 })
 
-export default function OrdersForm() {
+export default function OrdersForm({onSubmit}) {
+    const { company } = useAppSelector(selectCompanyData);
+
     const form = useForm({
         resolver: zodResolver(FormSchema),
         defaultValues: {
@@ -47,9 +60,6 @@ export default function OrdersForm() {
         },
     })
 
-    function onSubmit(data) {
-        console.log("Form data submitted:", data)
-    }
 
     return (
         <Form {...form}>
@@ -59,13 +69,41 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Date"
                         render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Date</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Enter date" {...field} />
-                                </FormControl>
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Date of order</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value ? (
+                                                    format(field.value, "PPP")
+                                                ) : (
+                                                    <span>Pick a date</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) =>
+                                                date > new Date() || date < new Date("1900-01-01")
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                                 <FormDescription>
-                                    Please provide a date for the order.
+                                    The date of placing the order
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -75,7 +113,7 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Id"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Order ID</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Enter order ID" {...field} />
@@ -91,7 +129,7 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Type"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Type</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="Enter type" {...field} />
@@ -107,13 +145,63 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Company"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Company</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="Enter company ID" {...field} />
-                                </FormControl>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn(
+                                                    "justify-between",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value
+                                                    ? company.find(
+                                                        (com) => com.Id === field.value
+                                                    )?.Name
+                                                    : "Select company"}
+                                                <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className=" p-0">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Search company..."
+                                                className="h-9"
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No framework found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {company.map((company) => (
+                                                        <CommandItem
+                                                            value={company.Name}
+                                                            key={company.Id}
+                                                            onSelect={() => {
+                                                                form.setValue("Company", company.Id)
+                                                            }}
+                                                        >
+                                                            {company.Name}
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "ml-auto h-4 w-4",
+                                                                    company.Id === field.value
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                                 <FormDescription>
-                                    ID of the company associated with this order.
+                                    The company that send the order.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -123,10 +211,10 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Observation"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Observation (Optional)</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter observation (if any)" {...field} />
+                                    <Input placeholder="Enter observation" {...field} />
                                 </FormControl>
                                 <FormDescription>
                                     Add any additional details (optional).
@@ -139,7 +227,7 @@ export default function OrdersForm() {
                         control={form.control}
                         name="Price"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Price</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="Enter price" {...field} />

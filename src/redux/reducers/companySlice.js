@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
-import { fetchCompany } from "@/Services/Company";
+import { fetchCompanies } from "@/Services/Company";
 
 // Define una acción asíncrona para obtener la compañía
-export const getCompany = createAsyncThunk(
+export const getCompanies = createAsyncThunk(
     'company/getCompany',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await fetchCompany();
+            const response = await fetchCompanies();
             return response; // Retorna la respuesta como el payload
         } catch (error) {
             return rejectWithValue(error.message); // Maneja el error
@@ -33,15 +33,15 @@ const companySlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(getCompany.pending, (state) => {
+            .addCase(getCompanies.pending, (state) => {
                 state.loading = true;
                 state.error = null; // Resetea el error
             })
-            .addCase(getCompany.fulfilled, (state, action) => {
+            .addCase(getCompanies.fulfilled, (state, action) => {
                 state.company = action.payload; // Guarda la compañía
                 state.loading = false; // Finaliza la carga
             })
-            .addCase(getCompany.rejected, (state, action) => {
+            .addCase(getCompanies.rejected, (state, action) => {
                 state.loading = false; // Finaliza la carga
                 state.error = action.payload; // Guarda el error
             });

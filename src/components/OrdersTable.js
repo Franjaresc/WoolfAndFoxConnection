@@ -4,8 +4,11 @@ import { useState } from "react"
 import {
     CaretSortIcon,
     ChevronDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
     DotsHorizontalIcon,
-    PlusCircledIcon,
+    DoubleArrowLeftIcon,
+    DoubleArrowRightIcon,
 } from "@radix-ui/react-icons"
 import PropTypes from 'prop-types';
 import {
@@ -34,7 +37,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { CreateOrderDialog } from "./CreateOrderDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useAppDispatch } from "@/redux/hooks";
+import { removeOrder } from "@/redux/reducers/orderSlice";
+
 OrdersTable.propTypes = {
     data: PropTypes.arrayOf(
         PropTypes.shape({
@@ -96,21 +102,26 @@ const columns = [
     {
         id: "actions",
         enableHiding: false,
-        cell: ({ row }) => (
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <DotsHorizontalIcon className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuItem>Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        ),
+        cell: ({ row, table }) => {
+            const order = row.original
+            return (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <DotsHorizontalIcon className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => table.options.meta?.handleDelete(order.Id)}
+                        >Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )
+        },
     },
 ]
 
@@ -118,7 +129,13 @@ export default function OrdersTable({ data }) {
     const [sorting, setSorting] = useState([])
     const [columnFilters, setColumnFilters] = useState([])
     const [columnVisibility, setColumnVisibility] = useState({})
-    const [rowSelection, setRowSelection] = useState({})
+
+    const dispatch = useAppDispatch();
+
+    const handleDelete = (id) => {
+        dispatch(removeOrder(id)); // Llama a deleteOrder aquí
+        console.log(`Order with ID ${id} deleted`); // Maneja confirmaciones o alertas aquí
+    };
 
     const table = useReactTable({
         data,
@@ -126,7 +143,6 @@ export default function OrdersTable({ data }) {
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -135,8 +151,10 @@ export default function OrdersTable({ data }) {
             sorting,
             columnFilters,
             columnVisibility,
-            rowSelection,
         },
+        meta: {
+            handleDelete
+        }
     })
 
     return (
@@ -148,7 +166,7 @@ export default function OrdersTable({ data }) {
                     onChange={(event) => table.getColumn("Id")?.setFilterValue(event.target.value)}
                     className="max-w-sm"
                 />
-                
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
@@ -207,23 +225,71 @@ export default function OrdersTable({ data }) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Next
-                </Button>
+            <div className="flex items-center justify-end px-2">
+                <div className="flex items-center space-x-6 lg:space-x-8 ">
+                    <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium">Rows per page</p>
+                        <Select
+                            value={`${table.getState().pagination.pageSize}`}
+                            onValueChange={(value) => {
+                                table.setPageSize(Number(value))
+                            }}
+                        >
+                            <SelectTrigger className="h-8 w-[70px]">
+                                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                                {[10, 20, 30, 40, 50].map((pageSize) => (
+                                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                                        {pageSize}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                        Page {table.getState().pagination.pageIndex + 1} of{" "}
+                        {table.getPageCount()}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            onClick={() => table.setPageIndex(0)}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Go to first page</span>
+                            <DoubleArrowLeftIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Go to previous page</span>
+                            <ChevronLeftIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Go to next page</span>
+                            <ChevronRightIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Go to last page</span>
+                            <DoubleArrowRightIcon className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     )
