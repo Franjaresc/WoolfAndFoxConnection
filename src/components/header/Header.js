@@ -4,11 +4,18 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import Logo from '@/assets/images/Logo.png'
 
+const menu = [
+  {
+    Name:'Orders',
+    Route:'/orders'
+  },
+]
+
 export default function Header() {
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!isMobileMenuOpen);
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
@@ -17,11 +24,12 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
           <div className="md:flex md:items-center md:gap-12">
-            <Link className="block" href="#">
+            <Link className="block" href="/">
               <Image
                 src={Logo}
                 width={100}
                 height={100}
+                priority
                 alt='Woolf and Fox connection'
               />
             </Link>
@@ -31,13 +39,13 @@ export default function Header() {
           <div className="hidden md:block">
             <nav aria-label="Global">
               <ul className="flex items-center gap-6 text-sm">
-                {['About', 'Careers', 'History', 'Services', 'Projects', 'Blog'].map((item) => (
-                  <li key={item}>
+                {menu.map((item) => (
+                  <li key={item.Name}>
                     <Link
-                      className="text-gray-500 transition hover:text-gray-500/75 dark:text-white dark:hover:text-white/75"
-                      href="#"
+                      className="text-foreground transition hover:text-foreground/75"
+                      href={item.Route}
                     >
-                      {item}
+                      {item.Name}
                     </Link>
                   </li>
                 ))}

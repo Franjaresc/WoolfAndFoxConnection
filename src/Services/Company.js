@@ -1,36 +1,9 @@
 'use server';
-import { sql } from "@vercel/postgres";
-import { z } from "zod";
+import { companySchema } from '@/schemas/companySchema';
+import { db } from '@vercel/postgres';
+import { z } from 'zod';
 
-// --- Custom Error Classes ---
-class ValidationError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
 
-class NotFoundError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
-
-class DatabaseError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'DatabaseError';
-    }
-}
-
-// --- Validation Schema ---
-const companySchema = z.object({
-    Id: z.number().int().positive().or(z.string()).refine(val => typeof val === 'number' || /^\d+$/.test(val), {
-        message: "Company ID must be a positive integer."
-    }),
-    Name: z.string().min(1, { message: "Company name cannot be empty." })
-});
 
 // --- Utility Functions ---
 
@@ -48,24 +21,19 @@ const formatCompanyData = (company) => ({
  * Maneja y registra los errores de la base de datos.
  * @param {Error} error - Error capturado.
  * @param {string} action - Acción que se estaba realizando cuando ocurrió el error.
- * @throws {DatabaseError} Error personalizado de la base de datos.
  */
 const handleDatabaseError = (error, action) => {
     console.error(`Error ${action} company:`, error);
-    throw new DatabaseError(`Error ${action} company: ${error.message}`);
+    throw new Error(`Error ${action} company: ${error.message}`);
 };
 
 /**
- * Valida los datos de una compañía utilizando Zod.
- * @param {Object} data - Datos de la compañía a validar.
- * @throws {ValidationError} Si los datos no pasan la validación.
+ * Lanza un error de validación.
+ * @param {Error} error - Error de validación capturado.
+ * @throws {ValidationError} Error de validación con mensajes detallados.
  */
-const validateCompanyData = (data) => {
-    try {
-        return companySchema.parse(data);
-    } catch (error) {
-        throw new ValidationError(`Validation error: ${error.errors.map(e => e.message).join(', ')}`);
-    }
+const handleValidationError = (error) => {
+    throw new ValidationError(`Validation error: ${error.errors.map(e => e.message).join(', ')}`);
 };
 
 // --- CRUD Functions ---
@@ -77,11 +45,13 @@ const validateCompanyData = (data) => {
  */
 export const fetchCompanies = async () => {
     try {
-        const { rows } = await sql`
+        const client = await db.connect();
+        const { rows } = await client.query(`
             SELECT "Id", "Name" 
             FROM "Company" 
             ORDER BY "Id" ASC;
-        `;
+        `);
+        client.release();
         return rows.map(formatCompanyData);
     } catch (error) {
         handleDatabaseError(error, "fetching");
@@ -91,100 +61,111 @@ export const fetchCompanies = async () => {
 /**
  * Inserta una nueva compañía en la base de datos.
  * @param {Object} companyData - Datos de la compañía a insertar.
- * @param {number} companyData.Id - ID de la compañía.
- * @param {string} companyData.Name - Nombre de la compañía.
- * @returns {Promise<Object>} Datos de la compañía insertada.
- * @throws {ValidationError} Si los datos no pasan la validación.
+ * @returns {Promise<Object>} Compañía insertada.
+ * @throws {ValidationError} Si los datos de la compañía no son válidos.
  * @throws {DatabaseError} Si ocurre un error al insertar la compañía.
  */
-export const insertCompany = async ({ Id, Name }) => {
+export const insertCompany = async (companyData) => {
     try {
-        validateCompanyData({ Id, Name });
+        companySchema.parse(companyData);
 
-        const { rows, rowCount } = await sql`
+        const client = await db.connect();
+        const { rowCount } = await client.query(`
             INSERT INTO "Company" ("Id", "Name")
-            VALUES (${Id}, ${Name}) 
-            ON CONFLICT ("Id") DO NOTHING
-            RETURNING "Id", "Name";
-        `;
+            VALUES ($1, $2)
+            ON CONFLICT ("Id") DO NOTHING;
+        `, [companyData.Id, companyData.Name]);
+        client.release();
 
-        if (rowCount === 0) {
-            throw new DatabaseError("Insertion failed: A company with this ID may already exist.");
-        }
+        if (rowCount === 0) throw new Error("Insertion failed: company with this ID may already exist.");
+        return await fetchCompanyById(companyData.Id);
 
-        return formatCompanyData(rows[0]);
     } catch (error) {
-        if (error instanceof ValidationError) {
-            throw error;
+        if (error instanceof z.ZodError) {
+            handleValidationError(error);
+        } else {
+            handleDatabaseError(error, "inserting");
         }
-        handleDatabaseError(error, "inserting");
     }
 };
 
 /**
  * Actualiza una compañía existente en la base de datos.
  * @param {Object} companyData - Datos de la compañía a actualizar.
- * @param {number} companyData.Id - ID de la compañía.
- * @param {string} companyData.Name - Nuevo nombre de la compañía.
- * @returns {Promise<Object>} Datos de la compañía actualizada.
- * @throws {ValidationError} Si los datos no pasan la validación.
- * @throws {NotFoundError} Si no se encuentra la compañía a actualizar.
+ * @returns {Promise<Object>} Compañía actualizada.
+ * @throws {ValidationError} Si los datos de la compañía no son válidos.
  * @throws {DatabaseError} Si ocurre un error al actualizar la compañía.
  */
-export const updateCompany = async ({ Id, Name }) => {
+export const updateCompany = async (companyData) => {
     try {
-        validateCompanyData({ Id, Name });
+        companySchema.parse(companyData);
 
-        const { rows, rowCount } = await sql`
-            UPDATE "Company" 
-            SET "Name" = ${Name}
-            WHERE "Id" = ${Id}
-            RETURNING "Id", "Name";
-        `;
+        const client = await db.connect();
+        const { rowCount } = await client.query(`
+            UPDATE "Company"
+            SET "Name" = $1
+            WHERE "Id" = $2;
+        `, [companyData.Name, companyData.Id]);
+        client.release();
 
-        if (rowCount === 0) {
-            throw new NotFoundError(`No company found with Id: ${Id}`);
-        }
+        if (rowCount === 0) throw new Error(`No company found with Id: ${companyData.Id}`);
+        return await fetchCompanyById(companyData.Id);
 
-        return formatCompanyData(rows[0]);
     } catch (error) {
-        if (error instanceof ValidationError || error instanceof NotFoundError) {
-            throw error;
+        if (error instanceof z.ZodError) {
+            handleValidationError(error);
+        } else {
+            handleDatabaseError(error, "updating");
         }
-        handleDatabaseError(error, "updating");
     }
 };
 
 /**
  * Elimina una compañía de la base de datos.
- * @param {number} Id - ID de la compañía a eliminar.
- * @returns {Promise<number>} ID de la compañía eliminada.
- * @throws {ValidationError} Si el ID no es válido.
- * @throws {NotFoundError} Si no se encuentra la compañía a eliminar.
+ * @param {number|string} Id - ID de la compañía a eliminar.
+ * @returns {Promise<number|string>} ID de la compañía eliminada.
+ * @throws {ValidationError} Si el ID de la compañía no es válido.
  * @throws {DatabaseError} Si ocurre un error al eliminar la compañía.
  */
 export const deleteCompany = async (Id) => {
     try {
-        // Validación básica del ID
-        const schema = z.number().int().positive();
+        if (!Id || (typeof Id !== 'number' && typeof Id !== 'string')) throw new Error("Company ID is required for deletion.");
 
-        schema.parse(Id); // Validación del ID
-
-        const { rows, rowCount } = await sql`
-            DELETE FROM "Company" 
-            WHERE "Id" = ${Id} 
+        const client = await db.connect();
+        const { rowCount } = await client.query(`
+            DELETE FROM "Company"
+            WHERE "Id" = $1
             RETURNING "Id";
-        `;
+        `, [Id]);
+        client.release();
 
-        if (rowCount === 0) {
-            throw new NotFoundError(`No company found with Id: ${Id}`);
-        }
+        if (rowCount === 0) throw new Error(`No company found with Id: ${Id}`);
+        return Id;
 
-        return rows[0].Id;
     } catch (error) {
-        if (error instanceof ValidationError || error instanceof NotFoundError) {
-            throw error;
-        }
         handleDatabaseError(error, "deleting");
+    }
+};
+
+/**
+ * Obtiene una compañía específica por su ID.
+ * @param {number|string} Id - ID de la compañía a obtener.
+ * @returns {Promise<Object|null>} Compañía obtenida o null si no se encuentra.
+ * @throws {DatabaseError} Si ocurre un error al obtener la compañía.
+ */
+export const fetchCompanyById = async (Id) => {
+    try {
+        const client = await db.connect();
+        const { rows } = await client.query(`
+            SELECT "Id", "Name"
+            FROM "Company"
+            WHERE "Id" = $1;
+        `, [Id]);
+        client.release();
+
+        const company = rows[0];
+        return company ? formatCompanyData(company) : null;
+    } catch (error) {
+        handleDatabaseError(error, "fetching");
     }
 };

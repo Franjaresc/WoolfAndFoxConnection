@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
-import { fetchOrders, deleteOrder, insertOrder, updateOrder } from "@/Services/Orders";
+import { fetchOrders, deleteOrder, insertOrder, updateOrder, fetchOrderCountsByMonth } from "@/Services/Orders";
 
 // Acción asíncrona para obtener órdenes
 export const getOrders = createAsyncThunk(
@@ -10,6 +10,19 @@ export const getOrders = createAsyncThunk(
             return response; // Retorna la respuesta como el payload
         } catch (error) {
             return rejectWithValue(error.message); // Maneja el error
+        }
+    }
+);
+
+// Acción asíncrona para obtener el conteo de órdenes por mes
+export const getOrderCountsByMonth = createAsyncThunk(
+    'order/getOrderCountsByMonth',
+    async ({ startDate, endDate }, { rejectWithValue }) => {
+        try {
+            const response = await fetchOrderCountsByMonth({ startDate, endDate });
+            return response;
+        } catch (error) {
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -56,6 +69,7 @@ export const removeOrder = createAsyncThunk(
 // Estado inicial
 const initialState = {
     orders: [],
+    orderCountsByMonth: [],
     loading: false,
     error: null,
 };
@@ -130,6 +144,19 @@ const orderSlice = createSlice({
             .addCase(removeOrder.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+            // Caso para getOrderCountsByMonth
+            .addCase(getOrderCountsByMonth.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getOrderCountsByMonth.fulfilled, (state, action) => {
+                state.orderCountsByMonth = action.payload;
+                state.loading = false;
+            })
+            .addCase(getOrderCountsByMonth.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     },
 });
@@ -138,13 +165,15 @@ const orderSlice = createSlice({
 export const selectOrders = (state) => state.order.orders;
 export const selectLoading = (state) => state.order.loading;
 export const selectError = (state) => state.order.error;
+export const selectOrderCountsByMonth = (state) => state.order.orderCountsByMonth;
 
 export const selectOrdersData = createSelector(
-    [selectOrders, selectLoading, selectError],
-    (orders, loading, error) => ({
+    [selectOrders, selectLoading, selectError, selectOrderCountsByMonth],
+    (orders, loading, error, orderCountsByMonth) => ({
         orders: orders || [],
         loading,
         error: error || null,
+        orderCountsByMonth: orderCountsByMonth || [],
     })
 );
 

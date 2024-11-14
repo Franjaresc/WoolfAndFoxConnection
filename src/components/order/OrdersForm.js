@@ -14,39 +14,35 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { CalendarIcon, CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"
-import { Calendar } from "./ui/calendar"
+import { Calendar } from "../ui/calendar"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { selectCompanyData } from "@/redux/reducers/companySlice"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command"
+import { cn } from "@/lib/utils/utils"
+import { selectCompanyData } from "@/redux/slices/companySlice"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command"
 import { useAppSelector } from "@/redux/hooks"
-import { deleteOrder } from "@/Services/Orders"
-import { selectOrderTypesData } from "@/redux/reducers/orderTypeSlice"
+import { selectOrderTypesData } from "@/redux/slices/orderTypeSlice"
 
 
 const FormSchema = z.object({
     Date: z.date({
-        required_error: "Date cannot be empty.",
-        invalid_type_error: "Date cannot be empty!",
+        required_error: "Date is required.",
     }),
-    Id: z.string().min(2, {
-        message: "ID must be at least 2 characters.",
-    }),
-    Type: z.coerce.number({
-        required_error: "Type is required.",
-    }).nonnegative(),
-    Company: z.coerce.number({
+    Id: z.string().min(1, "Order ID is required."),
+    Type: z.coerce.bigint({
+        required_error: "Order type is required.",
+    }).positive("Order type must be a positive bigint."),
+    Company: z.coerce.bigint({
         required_error: "Company is required.",
-    }).nonnegative(),
+    }).positive("Company ID must be a positive bigint."),
     Observation: z.string().optional(),
     Price: z.coerce.number({
         required_error: "Price is required.",
-    }).nonnegative(),
-})
+    }).nonnegative("Price must be a non-negative number."),
+});
 
-export default function OrdersForm({onSubmit}) {
+export default function OrdersForm({ onSubmit }) {
     const { company } = useAppSelector(selectCompanyData);
     const { orderTypes } = useAppSelector(selectOrderTypesData);
 
@@ -55,12 +51,12 @@ export default function OrdersForm({onSubmit}) {
         defaultValues: {
             Date: "",
             Id: "",
-            Type: 0,
-            Company: 0,
+            Type: BigInt(0),
+            Company: BigInt(0),
             Observation: "",
             Price: 0.0,
         },
-    })
+    });
 
 
     return (

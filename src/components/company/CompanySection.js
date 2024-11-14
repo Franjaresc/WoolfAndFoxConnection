@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/redux/hooks";
-import { selectCompanyData } from "@/redux/reducers/companySlice";
-import CompanyContent from "@/utils/CompanyContent";
+import { selectCompanyData } from "@/redux/slices/companySlice";
+import CompanyContent from "@/components/company/CompanyContent";
 
 export default function CompanySection() {
     const { company, loading:loadingCompany, error:errorCompany } = useAppSelector(selectCompanyData);

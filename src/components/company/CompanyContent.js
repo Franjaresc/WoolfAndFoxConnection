@@ -1,5 +1,5 @@
-import Loader from "@/components/Loader";
-import ErrorMessage from "@/utils/ErrorMessage";
+import Loader from "@/components/loader/Loader";
+import ErrorMessage from "@/components/error/ErrorMessage";
 
 const CompanyContent = ({ company, loading, error }) => {
   if (loading) return <Loader />;

@@ -1,7 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit'
-import orderReducer from './reducers/orderSlice'
-import companyReducer from './reducers/companySlice'
-import orderTypeReducer from './reducers/orderTypeSlice'
+import orderReducer from './slices/orderSlice'
+import companyReducer from './slices/companySlice'
+import orderTypeReducer from './slices/orderTypeSlice'
+import csvReducer from './slices/csvSlice'
 
 export const makeStore = () => {
     return configureStore({
@@ -9,6 +10,7 @@ export const makeStore = () => {
             order: orderReducer,
             company: companyReducer,
             orderType: orderTypeReducer,
+            csv: csvReducer,
         }
     })
 }
