@@ -14,51 +14,49 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { CalendarIcon, CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"
-import { Calendar } from "./ui/calendar"
+import { Calendar } from "../ui/calendar"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { selectCompanyData } from "@/redux/reducers/companySlice"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command"
+import { cn } from "@/lib/utils/utils"
+import { selectCompanyData } from "@/redux/slices/companySlice"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command"
 import { useAppSelector } from "@/redux/hooks"
-import { deleteOrder } from "@/Services/Orders"
+import { selectOrderTypesData } from "@/redux/slices/orderTypeSlice"
 
 
 const FormSchema = z.object({
     Date: z.date({
-        required_error: "Date cannot be empty.",
-        invalid_type_error: "Date cannot be empty!",
+        required_error: "Date is required.",
     }),
-    Id: z.string().min(2, {
-        message: "ID must be at least 2 characters.",
-    }),
-    Type: z.coerce.number({
-        required_error: "Type is required.",
-    }).nonnegative(),
-    Company: z.coerce.number({
+    Id: z.string().min(1, "Order ID is required."),
+    Type: z.coerce.bigint({
+        required_error: "Order type is required.",
+    }).positive("Order type must be a positive bigint."),
+    Company: z.coerce.bigint({
         required_error: "Company is required.",
-    }).nonnegative(),
+    }).positive("Company ID must be a positive bigint."),
     Observation: z.string().optional(),
     Price: z.coerce.number({
         required_error: "Price is required.",
-    }).nonnegative(),
-})
+    }).nonnegative("Price must be a non-negative number."),
+});
 
-export default function OrdersForm({onSubmit}) {
+export default function OrdersForm({ onSubmit }) {
     const { company } = useAppSelector(selectCompanyData);
+    const { orderTypes } = useAppSelector(selectOrderTypesData);
 
     const form = useForm({
         resolver: zodResolver(FormSchema),
         defaultValues: {
             Date: "",
             Id: "",
-            Type: 0,
-            Company: 0,
+            Type: BigInt(0),
+            Company: BigInt(0),
             Observation: "",
             Price: 0.0,
         },
-    })
+    });
 
 
     return (
@@ -131,11 +129,61 @@ export default function OrdersForm({onSubmit}) {
                         render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>Type</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="Enter type" {...field} />
-                                </FormControl>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn(
+                                                    "justify-between",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value
+                                                    ? orderTypes.find(
+                                                        (com) => com.Id === field.value
+                                                    )?.Name
+                                                    : "Select order type"}
+                                                <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className=" p-0">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Search order type..."
+                                                className="h-9"
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>No framework found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {orderTypes.map((orderType) => (
+                                                        <CommandItem
+                                                            value={orderType.Name}
+                                                            key={orderType.Id}
+                                                            onSelect={() => {
+                                                                form.setValue("Type", orderType.Id)
+                                                            }}
+                                                        >
+                                                            {orderType.Name}
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "ml-auto h-4 w-4",
+                                                                    orderType.Id === field.value
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                                 <FormDescription>
-                                    Specify the order type as a number.
+                                    The order type.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>

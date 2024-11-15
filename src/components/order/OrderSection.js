@@ -1,12 +1,14 @@
-import { CreateOrderDialog } from '@/components/CreateOrderDialog'
+import { CreateOrderDialog } from '@/components/order/CreateOrderDialog'
 import { useAppSelector } from '@/redux/hooks';
-import { selectOrdersData } from '@/redux/reducers/orderSlice';
-import OrdersContent from '@/utils/OrdersContent'
+import { selectOrdersData } from '@/redux/slices/orderSlice';
+import OrdersContent from '@/components/order/OrdersContent'
 import { PlusCircledIcon } from '@radix-ui/react-icons'
 import { Button } from 'react-day-picker'
+import { OrdersChart } from './OrdersChart';
+import { InvoiceOrdersForm } from './InvoiceOrdersForm';
 
 export default function OrderSection() {
-    const { orders, loading: loadingOrders, error: errorOrders } = useAppSelector(selectOrdersData);
+    const { orders, loading: loadingOrders, error: errorOrders, orderCountsByMonth } = useAppSelector(selectOrdersData);
     return (
         <section>
             <CreateOrderDialog>
@@ -15,6 +17,8 @@ export default function OrderSection() {
                 </Button>
             </CreateOrderDialog>
             <OrdersContent orders={orders} loading={loadingOrders} error={errorOrders} />
+            <OrdersChart data={orderCountsByMonth} />
+            <InvoiceOrdersForm />
         </section>
     )
 }

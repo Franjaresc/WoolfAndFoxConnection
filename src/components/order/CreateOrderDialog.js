@@ -9,8 +9,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import OrdersForm from "@/components/OrdersForm" // Asegúrate de tener la ruta correcta
-import { createOrder } from "@/redux/reducers/orderSlice";
+import OrdersForm from "@/components/order/OrdersForm" // Asegúrate de tener la ruta correcta
+import { createOrder } from "@/redux/slices/orderSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import { useState } from "react";
 
@@ -21,8 +21,14 @@ export function CreateOrderDialog() {
     const dispatch = useAppDispatch();
 
     const handleFormSubmit = (data) => {
-        dispatch(createOrder(data))
-        setOpen(false)
+        // Convertir Type y Company a BigInt
+        const formattedData = {
+            ...data,
+            Type: BigInt(data.Type),
+            Company: BigInt(data.Company),
+        };
+        dispatch(createOrder(formattedData));
+        setOpen(false);
     };
 
 

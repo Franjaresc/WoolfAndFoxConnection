@@ -1,10 +1,7 @@
-import Loader from "@/components/Loader";
-import { useAppSelector } from "@/redux/hooks";
-import { selectCompanyData } from "@/redux/reducers/companySlice";
-import ErrorMessage from "@/utils/ErrorMessage";
+import Loader from "@/components/loader/Loader";
+import ErrorMessage from "@/components/error/ErrorMessage";
 
-const CompanyInfo = () => {
-  const { company, loading, error } = useAppSelector(selectCompanyData);
+const CompanyContent = ({ company, loading, error }) => {
   if (loading) return <Loader />;
   if (error) return <ErrorMessage message="There was an error loading the company data. Please try again later." />;
   if (!company.length) return <ErrorMessage message="No company data found." />;
@@ -17,4 +14,4 @@ const CompanyInfo = () => {
   );
 };
 
-export default CompanyInfo;
+export default CompanyContent;

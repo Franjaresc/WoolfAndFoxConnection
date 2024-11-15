@@ -37,9 +37,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useAppDispatch } from "@/redux/hooks";
-import { removeOrder } from "@/redux/reducers/orderSlice";
+import { removeOrder } from "@/redux/slices/orderSlice";
 
 OrdersTable.propTypes = {
     data: PropTypes.arrayOf(
@@ -53,6 +53,12 @@ OrdersTable.propTypes = {
         })
     ).isRequired, // Asegúrate de que se pase el prop
 };
+
+const parseDate = (dateString) => {
+    const [day, month, year] = dateString.split('/').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 const columns = [
     {
         accessorKey: "Id",
@@ -71,6 +77,11 @@ const columns = [
             </Button>
         ),
         cell: ({ row }) => <div>{row.getValue("Date")}</div>,
+        sortingFn: (rowA, rowB) => {
+            const dateA = parseDate(rowA.original.Date);
+            const dateB = parseDate(rowB.original.Date);
+            return dateA - dateB;
+        },
     },
     {
         accessorKey: "Type",
@@ -134,7 +145,6 @@ export default function OrdersTable({ data }) {
 
     const handleDelete = (id) => {
         dispatch(removeOrder(id)); // Llama a deleteOrder aquí
-        console.log(`Order with ID ${id} deleted`); // Maneja confirmaciones o alertas aquí
     };
 
     const table = useReactTable({
